@@ -1,0 +1,14 @@
+[project]
+name = "agents2-s7-browse-history-plugin"
+version = "0.1.0"
+description = "Chrome extension to record browsing history, extract content, and index with FAISS"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi>=0.104.0",
+    "uvicorn[standard]>=0.24.0",
+    "sentence-transformers>=2.2.0",
+    "faiss-cpu>=1.7.4",
+    "numpy>=1.24.0",
+    "pydantic>=2.0.0",
+]
