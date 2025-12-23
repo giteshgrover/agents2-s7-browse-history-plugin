@@ -192,7 +192,7 @@ class FAISSIndexer:
             return []
         
         # Encode query
-        query_embedding = self.get_embedding(query)
+        query_embedding = self.get_embedding(query).reshape(1, -1) # Reshape to 1D array
         
         # Search
         k = min(top_k, self.index.ntotal)
