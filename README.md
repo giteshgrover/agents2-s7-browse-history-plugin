@@ -63,7 +63,7 @@ pip install -e .
 **Using uv:**
 
 ```bash
-uv run python main.py
+uv run main.py
 ```
 
 **Using standard Python:**

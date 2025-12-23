@@ -10,9 +10,16 @@ import os
 from typing import List, Dict, Optional
 from datetime import datetime
 import pickle
+import requests
+from google import genai
+from google.genai import types
+
+# embedding_model_name = "all-MiniLM-L6-v2
+# embedding_model_name = "gemini-embedding-exp-03-07"
+embedding_model_name = "nomic-embed-text"
 
 class FAISSIndexer:
-    def __init__(self, index_path: str = "faiss_index", embedding_model: str = "all-MiniLM-L6-v2"):
+    def __init__(self, index_path: str = "faiss_index"):
         """
         Initialize FAISS indexer
         
@@ -20,16 +27,23 @@ class FAISSIndexer:
             index_path: Path to store FAISS index and metadata
             embedding_model: Sentence transformer model name
         """
-        self.index_path = index_path
-        self.embedding_model_name = embedding_model
-        self.model = SentenceTransformer(embedding_model)
-        self.dimension = self.model.get_sentence_embedding_dimension()
+        
+        if embedding_model_name == "nomic-embed-text":
+            self.dimension = 768
+        elif embedding_model_name == "gemini-embedding-exp-03-07":
+            self.dimension = 3072
+            self.client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+        else:
+            self.model = SentenceTransformer(embedding_model_name)
+            self.dimension = self.model.get_sentence_embedding_dimension()
+        
         
         # Create index directory if it doesn't exist
         os.makedirs(index_path, exist_ok=True)
-        
+    
         # Load or create FAISS index
-        self.index_file = os.path.join(index_path, "index.faiss")
+        self.index_path = index_path
+        self.index_file = os.path.join(index_path, "index.bin") #"index.faiss"
         self.metadata_file = os.path.join(index_path, "metadata.pkl")
         
         if os.path.exists(self.index_file) and os.path.exists(self.metadata_file):
@@ -40,10 +54,35 @@ class FAISSIndexer:
             # Create new index (L2 distance)
             self.index = faiss.IndexFlatL2(self.dimension)
             self.metadata = []
-        
+         
         self.chunk_size = 500  # Characters per chunk
         self.chunk_overlap = 50  # Overlap between chunks
     
+    def get_embedding(self, text: str) -> np.ndarray:
+        if embedding_model_name == "nomic-embed-text":
+            response = requests.post(
+                "http://localhost:11434/api/embeddings",
+                json={
+                    "model": "nomic-embed-text",
+                    "prompt": text
+                }
+            )
+            response.raise_for_status()
+            return np.array(response.json()["embedding"], dtype=np.float32)
+        elif embedding_model_name == "gemini-embedding-exp-03-07":
+            response = self.client.models.embed_content(
+                model="gemini-embedding-exp-03-07",
+                contents=text,
+                config=types.EmbedContentConfig(task_type="RETRIEVAL_DOCUMENT")
+            )
+            response.raise_for_status()
+            return np.array(response.embeddings[0].values, dtype=np.float32)
+        else:
+            embeddings = self.model.encode(text, show_progress_bar=False)
+            embeddings = np.array(embeddings).astype('float32')
+            return embeddings
+        
+
     def chunk_text(self, text: str) -> List[str]:
         """
         Split text into overlapping chunks
@@ -98,23 +137,22 @@ class FAISSIndexer:
         Returns:
             Number of chunks added
         """
+        # TODO optional - Check whether the text and url has already been indexed. If so, just update the timestamp
+
         # Chunk the text
         chunks = self.chunk_text(text)
         
         if not chunks:
             return 0
         
-        # Create embeddings for all chunks
-        embeddings = self.model.encode(chunks, show_progress_bar=False)
-        embeddings = np.array(embeddings).astype('float32')
-        
-        # Add to FAISS index
-        self.index.add(embeddings)
-        
-        # Store metadata for each chunk
+        # Create embedding anf Store metadata for each chunk
+        page_embedding = []
+        page_metadata = []
         start_idx = len(self.metadata)
         for i, chunk in enumerate(chunks):
-            self.metadata.append({
+            embedding = self.get_embedding(chunk)
+            page_embedding.append(embedding)
+            page_metadata.append({
                 'url': url,
                 'title': title,
                 'description': description,
@@ -124,7 +162,16 @@ class FAISSIndexer:
                 'timestamp': timestamp,
                 'faiss_id': start_idx + i
             })
+        print(f"Page embedding size: {len(page_embedding)}")
+        print(f"Page metadata size: {len(page_metadata)}")
+        print(f"Page chunk count: {len(chunks)}")
         
+        self.index.add(np.stack(page_embedding))
+        self.metadata.extend(page_metadata)
+    
+        print(f"Total index size: {self.index.ntotal}")
+        print(f"Total Metadata size: {len(self.metadata)}")
+        print(f"Total pages indexed: {self.get_total_pages()}")
         # Save index and metadata
         self.save()
         
@@ -145,8 +192,7 @@ class FAISSIndexer:
             return []
         
         # Encode query
-        query_embedding = self.model.encode([query])
-        query_embedding = np.array(query_embedding).astype('float32')
+        query_embedding = self.get_embedding(query)
         
         # Search
         k = min(top_k, self.index.ntotal)
