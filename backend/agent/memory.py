@@ -29,12 +29,44 @@ class MemoryManager:
         self.embeddings: List[np.ndarray] = []
 
     def _get_embedding(self, text: str) -> np.ndarray:
-        response = requests.post(
-            self.embedding_model_url,
-            json={"model": self.model_name, "prompt": text}
-        )
-        response.raise_for_status()
-        return np.array(response.json()["embedding"], dtype=np.float32)
+        try:
+            response = requests.post(
+                "http://localhost:11434/api/embeddings",
+                json={
+                    "model": "nomic-embed-text",
+                    "prompt": text
+                }
+            )
+            pdb.set_trace()
+            response.raise_for_status()
+            return np.array(response.json()["embedding"], dtype=np.float32)
+        except requests.exceptions.ConnectionError as e:
+            logger.error(f"Failed to connect to Ollama at {self.embedding_model_url}. Is Ollama running? Error: {e}")
+            raise RuntimeError(
+                f"Could not connect to Ollama embedding service at {self.embedding_model_url}. "
+                f"Please ensure Ollama is running (e.g., 'ollama serve') and the model '{self.model_name}' is available."
+            ) from e
+        except requests.exceptions.HTTPError as e:
+            error_detail = ""
+            status_code = None
+            try:
+                if hasattr(e, 'response') and e.response is not None:
+                    status_code = e.response.status_code
+                    error_detail = f" Response: {e.response.text}"
+            except:
+                pass
+            logger.error(f"Ollama API returned error {status_code or 'unknown'} for model '{self.model_name}'.{error_detail}")
+            if status_code == 500:
+                raise RuntimeError(
+                    f"Ollama server returned 500 error. This usually means:\n"
+                    f"1. The model '{self.model_name}' is not available. Try: 'ollama pull {self.model_name}'\n"
+                    f"2. Ollama server has an internal error. Check Ollama logs.\n"
+                    f"3. The request format is incorrect. Error details: {error_detail}"
+                ) from e
+            raise
+        except requests.exceptions.Timeout as e:
+            logger.error(f"Timeout connecting to Ollama at {self.embedding_model_url}")
+            raise RuntimeError(f"Timeout waiting for Ollama embedding service. Is Ollama running?") from e
 
     def add(self, item: MemoryItem):
         emb = self._get_embedding(item.text)

@@ -20,6 +20,7 @@ if str(backend_dir) not in sys.path:
     sys.path.insert(0, str(backend_dir))
 
 from indexer.faiss_indexer import FAISSIndexer
+from agent.agent import run_agent
 
 # Configure logging
 logging.basicConfig(
@@ -107,18 +108,21 @@ async def search(query: str, top_k: int = 5):
     Search the FAISS index
     """
     logger.info(f"Search request received - Query: '{query}', Top K: {top_k}")
+    agent_query = f"""Search the user input '{query}' to find the top {top_k} browsing history results of the user"""
+    results = await run_agent(agent_query, top_k)
+    return {"results": results}
     
-    try:
-        results = indexer.search(query, top_k=top_k)
-        logger.info(f"Search completed - Found {len(results)} results for query: '{query}'")
+    # try:
+    #     results = indexer.search(query, top_k=top_k)
+    #     logger.info(f"Search completed - Found {len(results)} results for query: '{query}'")
         
-        if results:
-            logger.debug(f"Top result: {results[0].get('title', 'N/A')} (distance: {results[0].get('distance', 'N/A'):.4f})")
+    #     if results:
+    #         logger.debug(f"Top result: {results[0].get('title', 'N/A')} (distance: {results[0].get('distance', 'N/A'):.4f})")
         
-        return {"results": results}
-    except Exception as e:
-        logger.error(f"Error searching index with query '{query}': {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+    #     return {"results": results}
+    # except Exception as e:
+    #     logger.error(f"Error searching index with query '{query}': {e}", exc_info=True)
+    #     raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/stats")
 async def stats():

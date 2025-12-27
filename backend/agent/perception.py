@@ -45,6 +45,9 @@ Output only the dictionary on a single line. Do NOT wrap it in ```json or other 
 
         # Strip Markdown backticks if present
         clean = re.sub(r"^```json|```$", "", raw.strip(), flags=re.MULTILINE).strip()
+        # Replace null or N/A with empty Strings
+        clean = clean.replace("null", "\"\"")
+        logger.debug(f"Perception - LLM output after cleaning: {clean}")
 
         try:
             parsed = eval(clean)
