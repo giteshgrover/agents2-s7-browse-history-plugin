@@ -19,14 +19,16 @@ from google.genai import types
 embedding_model_name = "nomic-embed-text"
 
 class FAISSIndexer:
-    def __init__(self, index_path: str = "faiss_index"):
+    def __init__(self, index_path: Optional[str] = None):
         """
         Initialize FAISS indexer
         
         Args:
-            index_path: Path to store FAISS index and metadata
+            index_path: Path to store FAISS index and metadata (defaults to indexer/faiss_index relative to this file)
             embedding_model: Sentence transformer model name
         """
+        if index_path is None:
+            index_path = os.path.join(os.path.dirname(__file__), "faiss_index")
         
         if embedding_model_name == "nomic-embed-text":
             self.dimension = 768

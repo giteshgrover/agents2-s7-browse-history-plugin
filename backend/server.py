@@ -19,7 +19,7 @@ backend_dir = Path(__file__).parent
 if str(backend_dir) not in sys.path:
     sys.path.insert(0, str(backend_dir))
 
-from faiss_indexer import FAISSIndexer
+from indexer.faiss_indexer import FAISSIndexer
 
 # Configure logging
 logging.basicConfig(
@@ -61,6 +61,8 @@ class IndexResponse(BaseModel):
     success: bool
     message: str
     chunks_added: int
+
+
 
 @app.get("/health")
 async def health():
@@ -143,6 +145,7 @@ async def startup_event():
     logger.info(f"Current index size: {indexer.get_index_size()} vectors")
     logger.info(f"Total pages indexed: {indexer.get_total_pages()}")
     logger.info("=" * 60)
+    logger.info("Starting agent...")
 
 @app.on_event("shutdown")
 async def shutdown_event():
