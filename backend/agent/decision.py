@@ -20,6 +20,12 @@ def generate_plan(
 
     tool_context = f"\nYou have access to the following tools:\n{tool_descriptions}" if tool_descriptions else ""
 
+    specific_examples = """
+    - User asks: "Search the user input 'Shopping ladies bags' to find the top 1 browsing history results of the user"
+        - FUNCTION_CALL: search_browser_history|query="Shopping ladies bags"|top_k=1
+        - [{"url": "https://bananarepublicfactory.gapfactory.gapfactory.com/browse/product.do?pid=832257011&rrec=true&mlink=5001%2C1%2Cshoppingbag_brcart1_rr_0&clink=1&vid=1#pdp-page-content","title": "Graphic T-Shirt | Banana Republic Factory","description": "Shop Banana Republic Factory's Graphic T-Shirt: In efforts to lower our environmental impact, we consciously crafted this T-shirt using cotton and recycled fibers made from 6 post-consumer plastic bottles., Crew neck. Short sleeves., Straight hem., Made exclusively for Banana Republic Factory., #832257","chunk_text": "cGhpYyBULVNoaXJ0CkdyYXBoaWMgVC1TaGlydApTbGltIEx1eGUgVG91Y2ggUG9sbwpQcmVtaXVtIFdhc2ggVC1TaGlydApSZWNlbnRseSBWaWV3ZWQgJiBSZWxhdGVkIEl0ZW1zClNsaW0gTHV4ZSBUb3VjaCBQb2xvCkdyYXBoaWMgVC1TaGlydApHcmFwaGljIFQtU2hpcnQKR3JhcGhpYyBULVNoaXJ0ClByZW1pdW0gV2FzaCBULVNoaXJ0ClNsaW0gTHV4ZSBUb3VjaCBQb2xvClNsaW0gTHV4ZSBUb3VjaCBQb2xvCkdyYXBoaWMgVC1TaGlydApMdXhlIFRvdWNoIFBvbG8KR3JhcGhpYyBULVNoaXJ0ClJldmlld3MKV3JpdGUgdGhlIEZpcnN0IFJldmlldwpNZW4KLwpULVNoaXJ0cwo1MCUgb2ZmIGV2ZXJ5dGhpbmcKcGx1cywgZXh0cmEgNTAlIG9mZiBzYWxlClNob3AgV29tZW4gU2hvcCBNZW4KTElNSVRFRCBUSU1FLiBFWENMVVNJT05TIEFQUExZLipERVRBSUxTClNob3AgV29tZW4gU2hvcCBNZW4KTElNSVRFRCBUSU1FLiBFWENMVVNJT05TIEFQUExZLipERVRBSUxT","timestamp": "2025-12-27T01:01:18.381Z"}]
+        - FINAL_ANSWER: [{"url": "https://bananarepublicfactory.gapfactory.gapfactory.com/browse/product.do?pid=832257011&rrec=true&mlink=5001%2C1%2Cshoppingbag_brcart1_rr_0&clink=1&vid=1#pdp-page-content","title": "Graphic T-Shirt | Banana Republic Factory","description": "Shop Banana Republic Factory's Graphic T-Shirt: In efforts to lower our environmental impact, we consciously crafted this T-shirt using cotton and recycled fibers made from 6 post-consumer plastic bottles., Crew neck. Short sleeves., Straight hem., Made exclusively for Banana Republic Factory., #832257","chunk_text": "cGhpYyBULVNoaXJ0CkdyYXBoaWMgVC1TaGlydApTbGltIEx1eGUgVG91Y2ggUG9sbwpQcmVtaXVtIFdhc2ggVC1TaGlydApSZWNlbnRseSBWaWV3ZWQgJiBSZWxhdGVkIEl0ZW1zClNsaW0gTHV4ZSBUb3VjaCBQb2xvCkdyYXBoaWMgVC1TaGlydApHcmFwaGljIFQtU2hpcnQKR3JhcGhpYyBULVNoaXJ0ClByZW1pdW0gV2FzaCBULVNoaXJ0ClNsaW0gTHV4ZSBUb3VjaCBQb2xvClNsaW0gTHV4ZSBUb3VjaCBQb2xvCkdyYXBoaWMgVC1TaGlydApMdXhlIFRvdWNoIFBvbG8KR3JhcGhpYyBULVNoaXJ0ClJldmlld3MKV3JpdGUgdGhlIEZpcnN0IFJldmlldwpNZW4KLwpULVNoaXJ0cwo1MCUgb2ZmIGV2ZXJ5dGhpbmcKcGx1cywgZXh0cmEgNTAlIG9mZiBzYWxlClNob3AgV29tZW4gU2hvcCBNZW4KTElNSVRFRCBUSU1FLiBFWENMVVNJT05TIEFQUExZLipERVRBSUxTClNob3AgV29tZW4gU2hvcCBNZW4KTElNSVRFRCBUSU1FLiBFWENMVVNJT05TIEFQUExZLipERVRBSUxT","timestamp": "2025-12-27T01:01:18.381Z"}]
+    """
     prompt = f"""
 You are a reasoning-driven AI agent with access to tools. Your job is to solve the user's request step-by-step by reasoning through the problem, selecting a tool if needed, and continuing until the FINAL_ANSWER is produced.
 {tool_context}
@@ -52,23 +58,18 @@ Input Summary:
 - FINAL_ANSWER: [42]
 
 ✅ Examples:
-- User asks: "What’s the relationship between Cricket and Sachin Tendulkar"
-  - FUNCTION_CALL: search_documents|query="relationship between Cricket and Sachin Tendulkar"
-  - [receives a detailed document]
-  - FINAL_ANSWER: [Sachin Tendulkar is widely regarded as the "God of Cricket" due to his exceptional skills, longevity, and impact on the sport in India. He is the leading run-scorer in both Test and ODI cricket, and the first to score 100 centuries in international cricket. His influence extends beyond his statistics, as he is seen as a symbol of passion, perseverance, and a national icon. ]
-
+{specific_examples}
 
 IMPORTANT:
 - 🚫 Do NOT invent tools. Use only the tools listed below.
-- 📄 If the question may relate to factual knowledge, use the 'search_documents' tool to look for the answer.
+- 📄 If the question may relate to searching browsing history, use the 'search_browser_history' tool to look for the answer.
 - 🧮 If the question is mathematical or needs calculation, use the appropriate math tool.
-- 🤖 If the previous tool output already contains factual information, DO NOT search again. Instead, summarize the relevant facts and respond with: FINAL_ANSWER: [your answer]
-- Only repeat `search_documents` if the last result was irrelevant or empty.
+- 🤖 If the previous tool output already contained the result, do not search again. Instead return the same tool result as is with the same list of dict: FINAL_ANSWER: last tool result in list[dict] format
 - ❌ Do NOT repeat function calls with the same parameters.
 - ❌ Do NOT output unstructured responses.
 - 🧠 Think before each step. Verify intermediate results mentally before proceeding.
 - 💥 If unsure or no tool fits, skip to FINAL_ANSWER: [unknown]
-- ✅ You have only 3 attempts. Final attempt must be FINAL_ANSWER]
+- ✅ You have only 3 attempts. Final attempt must be FINAL_ANSWER
 """
 
     try:

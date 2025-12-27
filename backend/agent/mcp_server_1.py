@@ -76,28 +76,29 @@ def search_browser_history(query: str, top_k: int = 5) -> list[dict]:
     try:
         results = indexer.search(query, top_k=top_k)
         logger.info(f"Search completed - Found {len(results)} results for query: '{query}'")
+        return results
         
         # Process and modify each result
-        modified_results = []
-        for result in results:
-            # Create a new dict without chunk_index, total_chunks, and faiss_id
-            modified_result = {
-                'url': result.get('url'),
-                'title': result.get('title'),
-                'description': result.get('description'),
-                'chunk_text': base64.b64encode(result.get('chunk_text', '').encode('utf-8')).decode('utf-8'),
-                'timestamp': result.get('timestamp')
-            }
-            # Preserve any other keys that might exist (like 'distance' if present)
-            # for key in result:
-            #     if key not in ['chunk_index', 'total_chunks', 'faiss_id', 'chunk_text', 'url', 'title', 'description', 'timestamp']:
-            #         modified_result[key] = result[key]
-            modified_results.append(modified_result)
+        # modified_results = []
+        # for result in results:
+        #     # Create a new dict without chunk_index, total_chunks, and faiss_id
+        #     modified_result = {
+        #         'url': result.get('url'),
+        #         'title': result.get('title'),
+        #         'description': result.get('description'),
+        #         'chunk_text': base64.b64encode(result.get('chunk_text', '').encode('utf-8')).decode('utf-8'),
+        #         'timestamp': result.get('timestamp')
+        #     }
+        #     # Preserve any other keys that might exist (like 'distance' if present)
+        #     # for key in result:
+        #     #     if key not in ['chunk_index', 'total_chunks', 'faiss_id', 'chunk_text', 'url', 'title', 'description', 'timestamp']:
+        #     #         modified_result[key] = result[key]
+        #     modified_results.append(modified_result)
         
-        if modified_results:
-            logger.debug(f"Top result: {modified_results[0].get('title', 'N/A')}")
+        # if modified_results:
+        #     logger.debug(f"Top result: {modified_results[0].get('title', 'N/A')}")
         
-        return modified_results
+        # return modified_results
     except Exception as e:
         logger.error(f"Error searching index with query '{query}': {e}", exc_info=True)
         return [f"ERROR: Failed to search: {str(e)}"]
